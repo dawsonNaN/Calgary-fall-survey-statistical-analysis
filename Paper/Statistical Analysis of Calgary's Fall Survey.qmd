@@ -1,0 +1,582 @@
+---
+title: "Perceived Safety and Quality of Life in Calgary"
+subtitle: "DATA 602 Group 2 Project Report — Fall Survey of Calgarians"
+author:
+  - "Xiaolin Zhang"
+  - "Patrick Pascua"
+  - "Dingshuo Li"
+
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    pdf-engine: xelatex
+    geometry:
+      - margin=1in
+    include-in-header:
+      text: |
+        \usepackage{etoolbox}
+        \setkomafont{title}{\Huge\bfseries}
+        \setkomafont{subtitle}{\Large}
+        \setkomafont{author}{\large}
+        \pretocmd{\tableofcontents}{\clearpage}{}{}
+        \apptocmd{\tableofcontents}{\clearpage}{}{}
+
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+#| warning: false
+#| message: false
+
+library(ggplot2)
+library(knitr)
+```
+
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+
+# Read the 2024 and 2025 survey data for analysis 1
+fall2024 = read.csv("calgary_2024.csv")
+fall2025 = read.csv("calgary_2025.csv")
+# for analysis 2
+fall2025.df =read.csv("calgary_2025.csv")
+
+```
+
+
+\newpage 
+# Introduction
+
+## Background and Motivation
+
+Quality of life is an important measure of how residents perceive living conditions in a city. It can reflect residents' experiences with factors such as affordability, public safety, transportation, municipal services, and the overall social and economic environment. Understanding how Calgarians perceive their quality of life can therefore provide useful information about residents' experiences and priorities.
+
+The City of Calgary regularly conducts the **Survey of Calgarians** to measure residents' perceptions of life in Calgary, satisfaction with City programs and services, attitudes toward municipal government, perceived value for taxes, and expectations for the future. The Fall Survey is also designed as a longitudinal study, allowing changes in public sentiment to be examined over time. The City states that these survey results are used to support evidence-based decision-making, performance measurement, and the identification of areas for improvement. 
+
+
+
+## Problem Statement
+
+Although an overall measure of quality of life can describe general public sentiment, it may not fully show whether residents' experiences and perceptions differ across demographic groups or change over time. Therefore, this project uses the Fall Survey of Calgarians to investigate two aspects of residents' perceptions of life in Calgary.
+The first analysis examines whether the proportion of Calgarians who perceive Calgary as safe differs between the 2024 and 2025 Fall Surveys. The second analysis focuses on the relationship between age group and perceived changes in Calgary's quality of life over the past three years.
+Together, the two analyses provide both a time-based comparison and a demographic perspective on Calgarians' perceptions of living conditions in the city.
+
+
+## Data Source 
+
+The data used in this project come from the publicly available **Fall Survey of Calgarians**, published by The City of Calgary. The Fall 2025 survey was conducted by Ipsos Public Affairs from July 30, 2025 to August 28, 2025. A total of 2,500 Calgarians participated in the survey through telephone interviews. The Fall 2024 survey was also conducted by Ipsos Public Affairs, from August 8, 2024 to September 3, 2024, with a sample of 2,500 Calgarians.
+
+For this project, both the 2024 and 2025 survey data are used in Analysis 1 to compare perceived safety across the two years. The 2025 survey data are used in Analysis 2 to examine the relationship between age group and perceived change in quality of life.
+## Sampling Method and Study Population
+The Fall Survey of Calgarians used a random telephone sampling design. For the 2025 survey, Ipsos used random digit dialing with both cellular and landline telephone numbers. Approximately 60% of the telephone numbers were cell-phone numbers and 40% were landline numbers. This approach was used to obtain a random and statistically representative sample of Calgarians.
+
+Target sample proportions were established for demographic characteristics such as age, gender, and city ward to improve the representativeness of the sample with respect to Calgary's adult population. The City subsequently applies survey weights based on demographic information so that the final reported results more closely reflect the composition of Calgary's population. Therefore the population of interest is adult residents of the City of Calgary aged 18 years and older. The sample for the Fall 2025 survey consists of 2,500 Calgarians who completed the telephone survey.
+
+
+# Analysis 1: Perceived Safety in Calgary
+
+## Research Question
+Is there a difference in the proportion of Calgarians who perceive Calgary as safe between 2024 and 2025?
+
+Perceived safety is one aspect of residents' experience of living in Calgary. Comparing the two fall surveys can help us understand whether the proportion of residents who perceived Calgary as safe differed between the two years. A two-sample test for equality of proportions will be used to determine whether there is statistical evidence of a difference between 2024 and 2025.
+
+## Parameter of Interest
+
+The two populations of interest are Calgary residents aged 18 and older in 2024 and 2025.
+
+Let $p_{2024}$ be the proportion of Calgary residents who perceived Calgary as safe in 2024, and let $p_{2025}$ be the proportion who perceived Calgary as safe in 2025.
+
+The parameter of interest is:
+
+$$
+p_{2025} - p_{2024}
+$$
+
+This represents the difference in the population proportions between 2025 and 2024. A positive difference means that the proportion of residents who perceived Calgary as safe was higher in 2025.
+
+## Hypotheses
+
+$$
+H_0: p_{2025} - p_{2024} = 0
+$$
+
+$$
+H_A: p_{2025} - p_{2024} \neq 0
+$$
+
+The null hypothesis states that there is no difference in the population proportions of Calgary residents who perceived Calgary as safe between 2025 and 2024. The alternative hypothesis states that the population proportions are different between the two years. A significance level of $\alpha = 0.05$ will be used for the hypothesis test.
+
+## Data Preparation
+The original Q10C variable has six response categories:
+
+- 1 = Very safe
+- 2 = Reasonably safe
+- 3 = Somewhat unsafe
+- 4 = Very unsafe
+- 5 = Don't know
+- 6 = Refusal
+
+For our analysis, responses 1 and 2 were combined and classified as **Safe**, while responses 3 and 4 were combined and classified as **Unsafe**. Responses 5 (Don't know) and 6 (Refusal) were treated as missing and excluded from the analysis.
+
+After recoding, Q10C becomes a binary categorical variable with two categories, **Safe** and **Unsafe** as shown in @tbl-safety-summary. The same recoding method was used for both the 2024 and 2025 survey data.
+
+
+```{r}
+#| label: prepare-analysis1
+#| include: false
+
+# Keep valid Q10C responses (1-4)
+safety2024 = subset(fall2024, q10c %in% 1:4)
+safety2025 = subset(fall2025, q10c %in% 1:4)
+
+# Recode Q10C: 1 = Safe, 0 = Unsafe
+safety2024$safe = ifelse(safety2024$q10c %in% c(1, 2), 1, 0)
+safety2025$safe = ifelse(safety2025$q10c %in% c(1, 2), 1, 0)
+
+# Create a summary table
+safety_summary = data.frame(
+  Year = c(2024, 2025),
+  Total = c(nrow(fall2024), nrow(fall2025)),
+  Excluded = c(sum(!fall2024$q10c %in% 1:4),
+               sum(!fall2025$q10c %in% 1:4)),
+  Valid = c(nrow(safety2024), nrow(safety2025)),
+  Safe = c(sum(safety2024$safe), sum(safety2025$safe)),
+  Unsafe = c(sum(safety2024$safe == 0), sum(safety2025$safe == 0))
+)
+safety_summary$Safe_percent =
+  round(100 * safety_summary$Safe / safety_summary$Valid, 2)
+```
+
+```{r}
+#| label: tbl-safety-summary
+#| echo: false
+knitr::kable(
+  safety_summary,
+  caption = "Q10C Response Counts and Safe Percentages",
+  col.names = c("Year", "Total", "Excluded", "Valid",
+                "Safe", "Unsafe", "Safe (%)"),
+  digits = 2)
+```
+
+## Data Visualization
+
+```{r}
+#| label: fig-safety-bar
+#| fig-cap: "Percentage of respondents who perceived Calgary as safe in 2024 and 2025."
+#| fig-pos: "H"
+#| echo: false
+
+library(ggplot2)
+
+ggplot(safety_summary,
+       aes(x = factor(Year), y = Safe_percent, fill = factor(Year))) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = paste0(Safe_percent, "%")),
+    vjust = -0.5,
+    size = 4
+  ) +
+  ylim(0, 100) +
+  labs(
+    title = "Perceived Safety in Calgary",
+    x = "Year",
+    y = "Safe (%)"
+  ) +
+  scale_fill_manual(values = c("2024" = "steelblue",
+                               "2025" = "darkorange")) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+The @fig-safety-bar shows the percentage of respondents who perceived Calgary as safe in 2024 and 2025. The percentage increased slightly from 73.39% in 2024 to 73.96% in 2025. The observed difference is approximately 0.57 percentage points, indicating that the sample proportions were very similar between the two years. However, the graph only shows the observed difference in the samples and does not tell us whether this small difference reflects a real difference between the two years. Therefore, a two-sample proportion test will be used to determine whether there is statistical evidence of a difference between 2024 and 2025.
+
+## Condition Checking
+The sampling method described above supports the use of the survey samples for statistical inference. The 2024 and 2025 surveys are treated as independent samples because they were conducted as separate survey samples in the two years. The sample sizes are less than 10% of Calgary's adult population, so the independence condition is reasonable. The success-failure condition is also satisfied. In 2024, there were 1,831 Safe responses and 664 Unsafe responses. In 2025, there were 1,843 Safe responses and 649 Unsafe responses. All four counts are greater than 10. Therefore, the conditions for conducting a two-sample test for equality of proportions are satisfied.
+
+
+## Data Analysis
+A two-sample test for equality of proportions was conducted to compare the proportion of Calgary residents who perceived Calgary as safe in 2024 and 2025.
+```{r}
+#| label: hypothesis-test-analysis1
+#| echo: false
+test = prop.test(
+  x = safety_summary$Safe[c(2, 1)],
+  n = safety_summary$Valid[c(2, 1)],
+  alternative = "two.sided",
+  correct = FALSE
+)
+test
+```
+## Inference and Interpretation
+The p-value from the two-sample proportion test is 0.6477. Since the p-value is greater than the significance level of 0.05, we fail to reject the null hypothesis. There is insufficient statistical evidence to suggest that the population proportion of Calgary residents who perceived Calgary as safe was different between 2024 and 2025. 
+
+### P-value Interpretation
+
+Assuming that the population proportion of Calgarians who perceived Calgary as safe was the same in 2024 and 2025, the probability of observing a difference in sample proportions at least as extreme as the one observed in this study, in either direction, is approximately 0.6477.
+
+Because this probability is large, the observed difference between the two sample proportions is reasonably consistent with random sampling variation.
+
+
+
+
+# Analysis 2: Age Group and Perceived Change in Quality of Life
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+nrow(fall2025.df)
+```
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+analysis2.df =subset(fall2025.df,agerange %in% 1:6 &q3 %in% 1:3)
+
+analysis2.df$AgeGroup = factor(analysis2.df$agerange, levels = c(1,2,3,4,5,6),
+    labels = c("18 to 24","25 to 34","35 to 44","45 to 54","55 to 64","65 and older"))
+
+analysis2.df$quanlifeChange =factor(analysis2.df$q3,levels = c(1,2,3),labels = c("Improved","Stayed the same","Worsened"))
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+quanlife_age.crosstab = table(analysis2.df$AgeGroup,analysis2.df$quanlifeChange)
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+chisq.test =chisq.test(quanlife_age.crosstab, correct = FALSE)
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+qolage.rowpct =100 * prop.table(quanlife_age.crosstab,margin = 1)
+```
+
+
+
+## Research Question
+
+The second analysis examines whether perceptions of changes in Calgary's quality of life differ across age groups.
+
+For this analysis, the two population variables of interest are:
+
+- **Age Group**, a categorical variable with six categories: 18--24, 25--34, 35--44, 45--54, 55--64, and 65 and older.
+- **Perceived Change in Quality of Life**, a categorical variable indicating whether respondents believe quality of life has **Improved**, **Stayed the same**, or **Worsened** over the previous three years.
+
+Responses of "Don't know" and "Refusal" to the quality-of-life-change question are excluded because they do not represent one of the three substantive response categories being investigated. Respondents without a valid recorded age group are also excluded from this analysis.
+
+## Statistical Hypotheses
+Since the Research Question is：
+Is a Calgarian's perception of how the quality of life in Calgary has changed over the past associated with their age group?
+The hypothesis are：
+$$
+\begin{aligned}
+H_0 &: \text{Age Group and Perceived Change in Quality of Life are independent.} \\
+H_A &: \text{Age Group and Perceived Change in Quality of Life are not independent.}
+\end{aligned}
+$$
+
+
+## Exploratory Data Analysis
+
+Before conducting the statistical test, the relationship between Age Group and Perceived Change in Quality of Life is explored using the observed contingency table in @tbl-observed-counts and the within-age-group percentages in @tbl-age-percentages. A proportional bar chart in @fig-qol-age further illustrates the distribution of responses within each age group.
+```{r}
+#| label: tbl-observed-counts
+#| echo: false
+#| tbl-cap: "Observed Counts for Age Group and Perceived Change in Quality of Life"
+#| tbl-pos: "H"
+knitr::kable(quanlife_age.crosstab)
+```
+```{r}
+#| label: tbl-age-percentages
+#| echo: false
+#| tbl-cap: "Distribution of Perceived Change in Quality of Life within Each Age Group"
+#| tbl-pos: "H"
+qolage.rowpct
+```
+
+
+```{r}
+#| label: fig-qol-age
+#| echo: false
+#| fig-cap: "Distribution of Perceived Change in Calgary's Quality of Life by Age Group"
+#| fig-width: 8
+#| fig-height: 5
+#| tbl-pos: "H"
+
+ggplot(
+  analysis2.df,
+  aes(
+    x = AgeGroup,
+    fill = quanlifeChange
+  )
+) +
+  geom_bar(
+    position = "fill"
+  ) +
+  scale_y_continuous(
+    labels = scales::percent
+  ) +
+  xlab("Age Group") +
+  ylab("Proportion") +
+  labs(
+    fill = "Perceived Change",
+    title = "Perceived Change in Calgary's Quality of Life by Age Group"
+  )
+```
+The within-age-group percentages suggest that perceptions of changes in quality of life differ across age groups. In particular, respondents aged 18--24 appear less likely to report that quality of life has worsened than several of the older age groups. The graph also suggests that the distribution of perceived change in quality of life is not identical across age groups. However, these differences are descriptive only. A chi-square test of independence below is used to determine whether there is statistical evidence of an association in the population.
+
+
+## Compute the Expected Counts
+
+Under the null hypothesis, Age Group and Perceived Change in Quality of Life are independent. For the chi-square test of independence, the expected cell counts are calculated using the following formula and are shown in @tbl-expected:
+
+$$E_{ij}=\frac{(\text{Row Total})(\text{Column Total})}{n}.$$
+
+
+```{r}
+#| label: tbl-expected
+#| echo: false
+#| tbl-cap: "Expected Counts under the Null Hypothesis of Independence"
+#| tbl-pos: "H"
+
+knitr::kable(round(chisq.test$expected,4))
+```
+
+
+## Compute the Value of the Test Statistic
+The chi-square test of independence was carried out in R using the `chisq.test()` function. The resulting test statistic, degrees of freedom, and P-value are summarized below.
+```{r}
+#| echo: false
+#| tbl-cap: "chi-square test of independence Results"
+#| tbl-pos: "H"
+
+chi.table =data.frame(
+    `Chi-square Statistic` = round(chisq.test$statistic, 3),
+    `Degrees of Freedom` = chisq.test$parameter,
+    `P-value` = chisq.test$p.value)
+
+knitr::kable(
+  chi.table,
+  row.names = FALSE
+)
+```
+
+
+
+## Inference and Interpretation
+
+Since the p-value is less than the significance level of $\alpha = 0.05$, we reject the null hypothesis that Age Group and Perceived Change in Quality of Life are independent. The results provide statistically significant evidence of an association between a Calgarian's age group and their perception of how Calgary's quality of life has changed over the past three years. The observed sample distributions suggest that these perceptions vary across age groups.
+
+### P-value Interpretation
+Assuming that Age Group and Perceived Change in Quality of Life are independent in the adult Calgary population, the probability of obtaining a chi-square test statistic at least as large as the one observed in this sample is approximately \(1.54 \times 10^{-5}\). This very small probability provides strong evidence against the null hypothesis of independence.
+
+# Overall Conclusion
+
+This project examined two aspects of Calgarians' perceptions of living conditions using the Fall Survey of Calgarians. Analysis 1 found no statistically significant difference in perceived safety between 2024 and 2025, suggesting that the proportion of Calgarians who viewed the city as safe remained relatively stable across the two survey years. In contrast, Analysis 2 found a statistically significant association between Age Group and Perceived Change in Quality of Life, indicating that perceptions of changes in quality of life varied across age groups.
+
+Taken together, the results suggest that perceived safety in Calgary remained relatively stable from 2024 to 2025, while perceptions of changes in quality of life varied across age groups. This highlights the value of examining demographic differences in addition to overall city-wide survey results. These results could help the City of Calgary better understand how residents feel about living in the city. Instead of only looking at overall survey percentages, it may also be useful to compare results across different demographic groups. For example, future surveys or studies could look more closely at why some age groups have different views about changes in quality of life and whether factors such as affordability, transportation, public safety, or City services are related to these differences. 
+
+# Limitations
+There are several limitations to the analyses in this report. For Analysis 1, the survey measures respondents' perceptions of safety rather than actual crime or safety conditions, so the results cannot determine whether Calgary objectively became safer or less safe between 2024 and 2025. In addition, the original safety responses were combined into broader Safe and Unsafe categories, which reduces some of the detail in the original responses. Because the 2024 and 2025 surveys used separate samples, the analysis compares population proportions across years rather than changes in the same individuals over time.
+
+For Analysis 2, the chi-square test of independence identifies an overall association between Age Group and Perceived Change in Quality of Life, but it does not show that every age group differs from every other age group, establish a causal relationship, or explain the factors behind the association. Finally, both analyses use unweighted respondent counts, while the City of Calgary applies survey weights in its official reporting. Therefore, the sample estimates in this report may differ from the City's official weighted population estimates.
+
+\newpage
+
+# References
+
+City of Calgary. (2025). *Fall Survey of Calgarians 2025*. Open Calgary.  
+<https://data.calgary.ca/Help-and-Information/Fall-Survey-of-Calgarians-2025-/5wnm-smda/about_data>
+
+City of Calgary. (2024). *Fall Survey of Calgarians 2024*. Open Calgary.  
+<https://data.calgary.ca/Help-and-Information/Fall-Survey-of-Calgarians-2024-/t7u3-384g/about_data>
+
+\newpage
+
+# Appendix: R Code 
+
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+
+library(ggplot2)
+library(knitr)
+```
+
+
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+# Read the 2024 and 2025 survey data for analysis 1
+fall2024 = read.csv("calgary_2024.csv")
+fall2025 = read.csv("calgary_2025.csv")
+# for analysis 2
+fall2025.df =read.csv("calgary_2025.csv")
+
+```
+
+
+## code for analysis 1
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+
+# Keep valid Q10C responses (1-4)
+safety2024 = subset(fall2024, q10c %in% 1:4)
+safety2025 = subset(fall2025, q10c %in% 1:4)
+
+# Recode Q10C: 1 = Safe, 0 = Unsafe
+safety2024$safe = ifelse(safety2024$q10c %in% c(1, 2), 1, 0)
+safety2025$safe = ifelse(safety2025$q10c %in% c(1, 2), 1, 0)
+
+# Create a summary table
+safety_summary = data.frame(
+  Year = c(2024, 2025),
+  Total = c(nrow(fall2024), nrow(fall2025)),
+  Excluded = c(sum(!fall2024$q10c %in% 1:4),
+               sum(!fall2025$q10c %in% 1:4)),
+  Valid = c(nrow(safety2024), nrow(safety2025)),
+  Safe = c(sum(safety2024$safe), sum(safety2025$safe)),
+  Unsafe = c(sum(safety2024$safe == 0), sum(safety2025$safe == 0))
+)
+safety_summary$Safe_percent =
+  round(100 * safety_summary$Safe / safety_summary$Valid, 2)
+```
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+#| output: false
+knitr::kable(
+  safety_summary,
+  caption = "Q10C Response Counts and Safe Percentages",
+  col.names = c("Year", "Total", "Excluded", "Valid",
+                "Safe", "Unsafe", "Safe (%)"),
+  digits = 2)
+```
+
+
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+
+ggplot(safety_summary,
+       aes(x = factor(Year), y = Safe_percent, fill = factor(Year))) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = paste0(Safe_percent, "%")),
+    vjust = -0.5,
+    size = 4
+  ) +
+  ylim(0, 100) +
+  labs(
+    title = "Perceived Safety in Calgary",
+    x = "Year",
+    y = "Safe (%)"
+  ) +
+  scale_fill_manual(values = c("2024" = "steelblue",
+                               "2025" = "darkorange")) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+test = prop.test(
+  x = safety_summary$Safe[c(2, 1)],
+  n = safety_summary$Valid[c(2, 1)],
+  alternative = "two.sided",
+  correct = FALSE
+)
+test
+```
+
+
+
+
+
+
+
+## Code for Analysis 2
+```{r}
+#| echo: true
+#| eval: false
+#| warning: false
+#| message: false
+nrow(fall2025.df)
+```
+
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+analysis2.df =subset(fall2025.df,agerange %in% 1:6 &q3 %in% 1:3)
+
+analysis2.df$AgeGroup = factor( analysis2.df$agerange, levels = c(1,2,3,4,5,6),
+    labels = c("18 to 24","25 to 34","35 to 44","45 to 54","55 to 64","65 and older"))
+
+analysis2.df$quanlifeChange =
+  factor(analysis2.df$q3,levels = c(1,2,3),labels = c("Improved","Stayed the same","Worsened"))
+```
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+quanlife_age.crosstab = table(analysis2.df$AgeGroup,analysis2.df$quanlifeChange)
+```
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+chisq.test =chisq.test(quanlife_age.crosstab, correct = FALSE)
+chisq.test
+```
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+qolage.rowpct =100 * prop.table(quanlife_age.crosstab,margin = 1)
+qolage.rowpct
+```
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+round(chisq.test$expected,4)
+```
+
